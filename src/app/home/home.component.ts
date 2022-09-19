@@ -3,6 +3,7 @@ import {Course, sortCoursesBySeqNo} from '../model/course';
 import {interval, noop, Observable, of, throwError, timer} from 'rxjs';
 import {catchError, delay, delayWhen, filter, finalize, map, retryWhen, shareReplay, tap} from 'rxjs/operators';
 import {CoursesService} from '../services/courses.service';
+import {LoadingService} from '../loading/loading.service';
 
 
 @Component({
@@ -17,7 +18,8 @@ export class HomeComponent implements OnInit {
 
 
   constructor(
-    private coursesService: CoursesService) {
+    private coursesService: CoursesService,
+    private loadingService: LoadingService) {
   }
 
   ngOnInit() {
@@ -25,9 +27,14 @@ export class HomeComponent implements OnInit {
   }
 
   reloadCourses() {
+    this.loadingService.loadingOn();
+
+    // finalize używamy, kiedy observable z loadAllCourses()
+    // będzie completed lub error
     const courses$ = this.coursesService.loadAllCourses()
       .pipe(
-        map(courses => courses.sort(sortCoursesBySeqNo))
+        map(courses => courses.sort(sortCoursesBySeqNo)),
+        finalize(() => this.loadingService.loadingOff())
       );
 
     this.beginnerCourses$ = courses$
