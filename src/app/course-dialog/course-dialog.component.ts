@@ -1,7 +1,7 @@
 import {AfterViewInit, Component, ElementRef, Inject, OnInit, ViewChild, ViewEncapsulation} from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import {Course} from "../model/course";
-import {FormBuilder, Validators, FormGroup} from "@angular/forms";
+import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
+import {Course} from '../model/course';
+import {FormBuilder, Validators, FormGroup} from '@angular/forms';
 import * as moment from 'moment';
 import {catchError} from 'rxjs/operators';
 import {throwError} from 'rxjs';
@@ -9,50 +9,77 @@ import {CoursesService} from '../services/courses.service';
 import {LoadingService} from '../loading/loading.service';
 
 @Component({
-    selector: 'course-dialog',
-    templateUrl: './course-dialog.component.html',
-    styleUrls: ['./course-dialog.component.css']
+  selector: 'course-dialog',
+  templateUrl: './course-dialog.component.html',
+  styleUrls: ['./course-dialog.component.css'],
+  providers: [LoadingService]
 })
 export class CourseDialogComponent implements AfterViewInit {
 
-    form: FormGroup;
+  // zwrócmy uwagę na to, że LoadingService umieszczony jest jako osobny provider
+  // zarówno tu, jak i w app component
+  // stworzone zostaną zatem dwie instancje tego serwisu
+  // jednak, gdy wywołamy tutaj metodę włączającą loader (umieszczony w app.component) na widoku html
+  // to się on nie włączy - bo jest powiązany z instancją loader serwisu, ale tą z app. component
+  // i wszystkich umieszczonych poniżej w tej gałęzi komponentów
+  // okno dialogowe (material) pochodzi zaś z zupełnie innej gałęzi
+  // stąd na widoku html musimy dodać taki <loading>, aby loader zadziałał
 
-    course: Course;
+  form: FormGroup;
 
-    constructor(
-        private fb: FormBuilder,
-        private dialogRef: MatDialogRef<CourseDialogComponent>,
-        @Inject(MAT_DIALOG_DATA) course: Course,
-        private coursesService: CoursesService,
-        private loadingService: LoadingService) {
+  course: Course;
 
-        this.course = course;
+  constructor(
+    private fb: FormBuilder,
+    private dialogRef: MatDialogRef<CourseDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) course: Course,
+    private coursesService: CoursesService,
+    private loadingService: LoadingService) {
 
-        this.form = fb.group({
-            description: [course.description, Validators.required],
-            category: [course.category, Validators.required],
-            releasedAt: [moment(), Validators.required],
-            longDescription: [course.longDescription,Validators.required]
-        });
+    this.course = course;
 
-    }
+    this.form = fb.group({
+      description: [course.description, Validators.required],
+      category: [course.category, Validators.required],
+      releasedAt: [moment(), Validators.required],
+      longDescription: [course.longDescription, Validators.required]
+    });
 
-    ngAfterViewInit() {
+  }
 
-    }
+  ngAfterViewInit() {
 
-    save() {
-      const changes = this.form.value;
-      this.coursesService.saveCourse(this.course.id, changes)
-        .subscribe(
-          val => {
-            this.dialogRef.close(val);
-          }
-        )
-    }
+  }
 
-    close() {
-        this.dialogRef.close();
-    }
+  save() {
+    const changes = this.form.value;
+
+    const saveCourses$ = this.coursesService.saveCourse(this.course.id, changes);
+
+    // i teraz, żeby zadziałał loader, zmieniamy zapis, aby metoda z loader serwisu
+    // obserwowała utwotrzoną wyżej zmienną
+
+    this.loadingService.showLoaderUntilCompleted(saveCourses$)
+      .subscribe(
+        val => {
+          this.dialogRef.close(val);
+        }
+      );
+  }
+
+  // WCZEŚNIEJ:
+  // save() {
+  //   const changes = this.form.value;
+  //   this.coursesService.saveCourse(this.course.id, changes)
+  //     .subscribe(
+  //       val => {
+  //         this.dialogRef.close(val);
+  //       }
+  //     );
+  // }
+
+  close() {
+    this.dialogRef.close();
+  }
 
 }
