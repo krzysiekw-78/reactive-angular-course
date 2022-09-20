@@ -17,7 +17,6 @@ With the following command the angular-cli will be installed globally in your ma
 
     npm install -g @angular/cli 
 
-
 # How To install this repository
 
 We can install the master branch using the following commands:
