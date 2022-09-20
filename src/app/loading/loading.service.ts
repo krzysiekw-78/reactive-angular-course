@@ -1,5 +1,6 @@
 import {Injectable} from '@angular/core';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {BehaviorSubject, Observable, of} from 'rxjs';
+import {concatMap, finalize, switchAll, switchMap, tap} from 'rxjs/operators';
 
 @Injectable()
 export class LoadingService {
@@ -20,8 +21,20 @@ export class LoadingService {
   // obs$ - Observable, that we want to track
   // returns another observable of the same type
   showLoaderUntilCompleted<T>(obs$: Observable<T>): Observable<T> {
-    return undefined;
+    // null, aby zainicjować observable
+    return of(null)
+      .pipe(
+        // po zainicjowaniu nullem, włączamy loader
+        tap(() => this.loadingOn()),
+        // w przykładzie był concatMap, ale chodzi o to, że przełączamy się na wartość
+        // emitowaną przez input observable obs$
+        switchMap(() => obs$),
+        // kiedy input observable obs$ przestaje emitować wartości
+        // wyłączamy loader
+        finalize(() => this.loadingOff())
+      )
   }
+  // tu indicator pojawi się tylko, jeżeli wogóle zasubskrybujemy się do observabla
 
   loadingOn() {
     this.loadingSubject.next(true);

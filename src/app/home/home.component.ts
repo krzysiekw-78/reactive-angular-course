@@ -27,24 +27,41 @@ export class HomeComponent implements OnInit {
   }
 
   reloadCourses() {
-    this.loadingService.loadingOn();
+    // to było wcześniej
+    // this.loadingService.loadingOn();
 
     // finalize używamy, kiedy observable z loadAllCourses()
     // będzie completed lub error
     const courses$ = this.coursesService.loadAllCourses()
       .pipe(
         map(courses => courses.sort(sortCoursesBySeqNo)),
-        finalize(() => this.loadingService.loadingOff())
+        // finalize(() => this.loadingService.loadingOff())
       );
 
-    this.beginnerCourses$ = courses$
+    // wcześniej włączyliśmy loader na początku i zakończyliśmy go
+    // poprzez finalize. Możemy także poprzez nową observable:
+    const loadCourses$ = this.loadingService.showLoaderUntilCompleted(courses$);
+
+    this.beginnerCourses$ = loadCourses$
       .pipe(
         map(courses => courses.filter(course => course.category === 'BEGINNER'))
       );
-    this.advancedCourses$ = courses$
+    this.advancedCourses$ = loadCourses$
       .pipe(
         map(courses => courses.filter(course => course.category === 'ADVANCED'))
       );
+
+    // zanim wprowadziliśmy loadCourses$ było tak:
+    // odwoływaliśmy się do courses$
+
+    // this.beginnerCourses$ = courses$
+    //   .pipe(
+    //     map(courses => courses.filter(course => course.category === 'BEGINNER'))
+    //   );
+    // this.advancedCourses$ = courses$
+    //   .pipe(
+    //     map(courses => courses.filter(course => course.category === 'ADVANCED'))
+    //   );
   }
 }
 
