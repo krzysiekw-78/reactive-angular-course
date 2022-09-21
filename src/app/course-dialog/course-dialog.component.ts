@@ -7,12 +7,16 @@ import {catchError} from 'rxjs/operators';
 import {throwError} from 'rxjs';
 import {CoursesService} from '../services/courses.service';
 import {LoadingService} from '../loading/loading.service';
+import {MessageServices} from '../messages/message.services';
 
 @Component({
   selector: 'course-dialog',
   templateUrl: './course-dialog.component.html',
   styleUrls: ['./course-dialog.component.css'],
-  providers: [LoadingService]
+  providers: [
+    LoadingService,
+    MessageServices
+  ]
 })
 export class CourseDialogComponent implements AfterViewInit {
 
@@ -34,7 +38,8 @@ export class CourseDialogComponent implements AfterViewInit {
     private dialogRef: MatDialogRef<CourseDialogComponent>,
     @Inject(MAT_DIALOG_DATA) course: Course,
     private coursesService: CoursesService,
-    private loadingService: LoadingService) {
+    private loadingService: LoadingService,
+    private messagesService: MessageServices) {
 
     this.course = course;
 
@@ -54,7 +59,15 @@ export class CourseDialogComponent implements AfterViewInit {
   save() {
     const changes = this.form.value;
 
-    const saveCourses$ = this.coursesService.saveCourse(this.course.id, changes);
+    const saveCourses$ = this.coursesService.saveCourse(this.course.id, changes)
+      .pipe(
+        catchError(err => {
+          const message = 'Could not save course';
+          console.log(message, err);
+          this.messagesService.showErrors(message);
+          return throwError(err);
+        })
+      );
 
     // i teraz, żeby zadziałał loader, zmieniamy zapis, aby metoda z loader serwisu
     // obserwowała utwotrzoną wyżej zmienną

@@ -4,6 +4,7 @@ import {interval, noop, Observable, of, throwError, timer} from 'rxjs';
 import {catchError, delay, delayWhen, filter, finalize, map, retryWhen, shareReplay, tap} from 'rxjs/operators';
 import {CoursesService} from '../services/courses.service';
 import {LoadingService} from '../loading/loading.service';
+import {MessageServices} from '../messages/message.services';
 
 
 @Component({
@@ -19,7 +20,8 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private coursesService: CoursesService,
-    private loadingService: LoadingService) {
+    private loadingService: LoadingService,
+    private messagesService: MessageServices) {
   }
 
   ngOnInit() {
@@ -36,6 +38,15 @@ export class HomeComponent implements OnInit {
       .pipe(
         map(courses => courses.sort(sortCoursesBySeqNo)),
         // finalize(() => this.loadingService.loadingOff())
+        catchError(err => {
+          const message = 'Could not load courses';
+          this.messagesService.showErrors(message);
+          console.log(message, err);
+
+          // throwError emituje nową observable i kończy natychmiast
+          // cykl observabli, który tutaj jest w pipe
+          return throwError(err);
+        })
       );
 
     // wcześniej włączyliśmy loader na początku i zakończyliśmy go
